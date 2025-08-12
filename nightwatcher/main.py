@@ -2,13 +2,12 @@ import base64
 import logging
 import os
 import signal
-import threading
-import time
 
 import cv2
 import numpy as np
 from dotenv import load_dotenv
 from nicegui import Client, app, core, ui
+from rtsp import RTSPCameraStream
 
 logging.basicConfig(
     level=logging.INFO,
@@ -21,98 +20,6 @@ logging.basicConfig(
 
 
 load_dotenv()
-
-
-class RTSPCameraStream:
-    """
-    A class to handle RTSP camera streaming using OpenCV and threading.
-
-    References:
-    - http://github.com/god233012yamil/How-to-Stream-a-Camera-Using-OpenCV-and-Threads
-    """
-
-    def __init__(self, url: str):
-        self.url = url
-        self.cap = None
-        self.is_running = False
-        self.thread = None
-        self.lock = threading.Lock()
-        self.frame: tuple[bool, cv2.typing.MatLike] | None = None
-
-        self.logger = logging.getLogger(self.__class__.__name__)
-
-    def _connect(self) -> bool:
-        try:
-            if self.cap is not None:
-                self.cap.release()
-
-            self.cap = cv2.VideoCapture(self.url)
-            if not self.cap.isOpened():
-                self.logger.error("Failed to open RTSP stream")
-                return False
-
-            self.logger.info("Successfully connected to RTSP stream")
-            return True
-
-        except Exception as e:
-            self.logger.error(f"Error connecting to RTSP stream: {e}")
-            return False
-
-    def start(self) -> None:
-        self.logger.info(f"Start rtsp streaming service: {self.url}")
-
-        if self.is_running:
-            self.logger.warning("Stream is already running")
-            return
-
-        if not self._connect():
-            return
-
-        self.is_running = True
-        self.thread = threading.Thread(target=self._update_frame, args=(), daemon=True)
-        self.thread.start()
-
-        self.logger.info("Stream service started.")
-
-    def stop(self) -> None:
-        self.is_running = False
-
-        if self.thread is not None:
-            self.thread.join()
-
-        if self.cap and self.cap.isOpened():
-            self.cap.release()
-
-    def restart(self) -> None:
-        self.logger.info("[Producer]Restarting stream...")
-        self.stop()
-        self.start()
-        self.logger.info("[Producer]Restarting stream done")
-
-    def _update_frame(self) -> None:
-        while self.is_running:
-            if self.cap is None or not self.cap.isOpened():
-                self.logger.info("Attemp to reconnect...")
-                if not self._connect():
-                    time.sleep(1)
-                continue
-
-            ret, frame = self.cap.read()
-            if not ret:
-                # Retry interval and max times
-                self.logger.warning("Failed to read frame, reconnect...")
-                self._connect()
-                continue
-
-            with self.lock:
-                self.frame = (ret, frame)
-                self.logger.debug(f"Update frame: {ret}")
-
-    def read(self) -> tuple[bool, cv2.typing.MatLike | None]:
-        with self.lock:
-            if self.frame is not None:
-                return self.frame
-            return False, None
 
 
 def convert(frame: np.ndarray) -> bytes:
@@ -143,7 +50,10 @@ def create_camera_view(camera: RTSPCameraStream):
     # A timer constantly updates the source of the image.
     # Because data from same paths is cached by the browser,
     # we must force an update by adding the current timestamp to the source.
-    ui.timer(interval=0.1, callback=lambda: update_image(camera))
+    timer = ui.timer(interval=0.1, callback=lambda: update_image(camera))
+
+    ui.context.client.on_connect(timer.activate)
+    ui.context.client.on_disconnect(timer.deactivate)
 
 
 def setup() -> None:
@@ -152,24 +62,20 @@ def setup() -> None:
 
     cameras = tuple(RTSPCameraStream(url) for url in rtsp_urls.split(","))
     for camera in cameras:
-        camera.start()
+        ui.timer(0.1, camera.start, once=True)
+        # camera.start()
 
     @ui.page("/")
     async def index():
-        ui.label("Nightwatchers!!")
-        for camera in cameras:
-            create_camera_view(camera)
+        with ui.column().classes("max-w-6xl mx-auto"):
+            with ui.column().classes("grid grid-cols-1 lg:grid-cols-2 gap-4"):
+                for camera in cameras:
+                    create_camera_view(camera)
 
     async def disconnect() -> None:
         """Disconnect all clients from current running server."""
         for client_id in Client.instances:
             await core.sio.disconnect(client_id)
-
-    def handle_sigint(signum, frame) -> None:
-        # `disconnect` is async, so it must be called from the event loop; we use `ui.timer` to do so.
-        ui.timer(0.1, disconnect, once=True)
-        # Delay the default handler to allow the disconnect to complete.
-        ui.timer(1, lambda: signal.default_int_handler(signum, frame), once=True)
 
     async def cleanup() -> None:
         # This prevents ugly stack traces when auto-reloading on code change,
@@ -180,6 +86,13 @@ def setup() -> None:
             camera.stop()
 
     app.on_shutdown(cleanup)
+
+    def handle_sigint(signum, frame) -> None:
+        # `disconnect` is async, so it must be called from the event loop; we use `ui.timer` to do so.
+        ui.timer(0.1, disconnect, once=True)
+        # Delay the default handler to allow the disconnect to complete.
+        ui.timer(1, lambda: signal.default_int_handler(signum, frame), once=True)
+
     # We also need to disconnect clients when the app is stopped with Ctrl+C,
     # because otherwise they will keep requesting images which lead to unfinished subprocesses blocking the shutdown.
     signal.signal(signal.SIGINT, handle_sigint)
@@ -189,5 +102,7 @@ def setup() -> None:
 # by the auto-reload main process (see https://github.com/zauberzeug/nicegui/discussions/2321).
 app.on_startup(setup)
 
-
-ui.run()
+ui.run(
+    title="Night Watcher",
+    favicon="🦇",
+)
