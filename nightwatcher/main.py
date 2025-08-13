@@ -4,8 +4,6 @@ import os
 import signal
 from functools import partial
 
-import cv2
-import numpy as np
 from dotenv import load_dotenv
 from nicegui import Client, app, core, ui
 from rtsp import RTSPCameraStream
