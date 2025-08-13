@@ -1,3 +1,3 @@
 from ultralytics import YOLO
 
-yolo = YOLO("yolov8n.pt")
+yolo = YOLO("yolo11l.pt")

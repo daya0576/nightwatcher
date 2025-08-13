@@ -1,4 +1,4 @@
-# Night Watcher
+# [WIP] Night Watcher
 
 A Micro IP Camera Web Viewer
 
@@ -10,5 +10,5 @@ uv venv && source .venv/bin/activate
 uv sync
 
 # Start the server
-python nightwatcher/main.py
+uv run python -m nightwatcher.main
 ```

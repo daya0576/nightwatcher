@@ -1,6 +1,7 @@
 import logging
 import time
 from collections import defaultdict
+from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
 from typing import Callable
@@ -26,10 +27,12 @@ def task(stage: str):
     return decorator
 
 
+@dataclass
 class Request:
     stream: RTSPCameraStream
 
 
+@dataclass
 class Response:
     # detection stats
     color: str | None = None
@@ -53,13 +56,12 @@ class Pipeline:
         self.tasks = TASKS.copy()
 
     def invoke(self, request: Request, response: Response) -> bool:
-        logging.info(f"[Pipeline] Start {self.name}...")
         for lifecycle in LifeCycle:
             for task in self.tasks[lifecycle.value]:
                 task_start = time.time()
                 task(request, response)
-                task_duration = time.time() - task_start
-                logging.info(
+                task_duration = (time.time() - task_start) * 1000
+                logging.debug(
                     f"[Pipeline][{lifecycle.value}] Task {task.__name__} "
                     f"completed in {task_duration:.0f}ms"
                 )

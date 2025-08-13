@@ -1,6 +1,9 @@
 import logging
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
+from typing import Iterator, Self
 
 import cv2
 
@@ -95,3 +98,35 @@ class RTSPCameraStream:
             if self.frame is not None:
                 return self.frame
             return False, None
+
+
+class CameraGroup:
+    def __init__(self, cameras: tuple[RTSPCameraStream, ...]):
+        self.cameras = cameras
+        self.stop_event = Event()
+        self._executor = ThreadPoolExecutor(max_workers=len(self.cameras))
+        self._current = 0
+
+    def start(self) -> Self:
+        futures = [self._executor.submit(camera.start) for camera in self.cameras]
+        for future in futures:
+            future.result()
+
+        return self
+
+    def stop(self):
+        self.stop_event.set()
+        for camera in self.cameras:
+            camera.stop()
+        self._executor.shutdown(wait=True)
+
+    def __iter__(self) -> Iterator[RTSPCameraStream]:
+        return self
+
+    def __next__(self) -> RTSPCameraStream:
+        if self._current >= len(self.cameras):
+            self._current = 0
+            raise StopIteration
+        camera = self.cameras[self._current]
+        self._current += 1
+        return camera

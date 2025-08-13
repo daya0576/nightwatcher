@@ -14,9 +14,6 @@ def read_frame(request: Request, response: Response):
     assert ret is True
     assert frame is not None
 
-    # image_bytes = convert(frame)
-    # logging.debug(f"[Consumer]Convert frame to byte: {len(image_bytes)}")
-
     response.snapshot = frame
 
 
@@ -28,20 +25,30 @@ def detection(_: Request, response: Response):
     # Run Detection
     # https://docs.ultralytics.com/tasks/detect/
     model = models.yolo
-    results = model(image, classes=[0])[0]
+    results = model(image, verbose=False)[0]
 
     # Load Predictions into Supervision
+    # https://supervision.roboflow.com/latest/how_to/detect_and_annotate/
     detections = sv.Detections.from_ultralytics(results)
-    if not detections:
-        return
 
     # Annotate Image with Detections
     box_annotator = sv.BoxAnnotator()
-    label_annotator = sv.LabelAnnotator()
-
     annotated_image = box_annotator.annotate(scene=image, detections=detections)
+
+    label_annotator = sv.LabelAnnotator(
+        text_scale=1.5,
+        text_thickness=3,
+        text_padding=10,
+        smart_position=True,
+    )
+    labels = [
+        f"{class_name} {confidence:.2f}"
+        for class_name, confidence in zip(
+            detections["class_name"], detections.confidence
+        )
+    ]
     annotated_image = label_annotator.annotate(
-        scene=annotated_image, detections=detections
+        scene=annotated_image, detections=detections, labels=labels
     )
 
     response.snapshot_annotated = annotated_image
