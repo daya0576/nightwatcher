@@ -3,14 +3,12 @@ import logging
 import os
 import signal
 
-import cv2
-import numpy as np
 from dotenv import load_dotenv
 from nicegui import Client, app, core, ui
 from rtsp import RTSPCameraStream
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
     handlers=[
         logging.FileHandler("debug.log"),
@@ -20,16 +18,6 @@ logging.basicConfig(
 
 
 load_dotenv()
-
-
-def convert(frame: np.ndarray) -> bytes:
-    """Converts a frame from OpenCV to a JPEG image.
-
-    This is a free function (not in a class or inner-function),
-    to allow run.cpu_bound to pickle it and send it to a separate process.
-    """
-    _, imencode_image = cv2.imencode(".jpg", frame)
-    return imencode_image.tobytes()
 
 
 def create_camera_view(camera: RTSPCameraStream):

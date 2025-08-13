@@ -163,3 +163,4 @@ memray-*
 profile.svg
 
 *.log
+*.pt

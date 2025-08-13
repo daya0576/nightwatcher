@@ -1,12 +1,13 @@
 # Night Watcher
 
-Uses OpenCV to capture images from a webcam.
+A Micro IP Camera Web Viewer
 
 # Get Started
 
 ```
 # Install uv and all the dependencies
-uv venv && uv sync
+uv venv && source .venv/bin/activate
+uv sync
 
 # Start the server
 python nightwatcher/main.py
