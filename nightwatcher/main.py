@@ -2,6 +2,7 @@ import base64
 import logging
 import os
 import signal
+from functools import partial
 
 import cv2
 import numpy as np
@@ -32,28 +33,17 @@ def convert(frame: np.ndarray) -> bytes:
     return imencode_image.tobytes()
 
 
-def create_camera_view(camera: RTSPCameraStream):
-    def update_image(camera):
-        ret, frame = camera.read()
-        logging.debug(f"[Consumer]Read latest frame: {ret},{str(frame)[:10]}")
-        if not ret:
-            return
+def update_image(camera: RTSPCameraStream, video_image: ui.interactive_image):
+    ret, frame = camera.read()
+    logging.debug(f"[Consumer]Read latest frame: {ret},{str(frame)[:10]}")
+    if not ret:
+        return
 
-        image_bytes = convert(frame)
-        logging.debug(f"[Consumer]Convert frame to byte: {len(image_bytes)}")
+    image_bytes = convert(frame)
+    logging.debug(f"[Consumer]Convert frame to byte: {len(image_bytes)}")
 
-        base64_str = base64.b64encode(image_bytes).decode("utf-8")
-        video_image.set_source(f"data:image/png;base64,{base64_str}")
-
-    video_image = ui.interactive_image().classes("w-full h-full")
-
-    # A timer constantly updates the source of the image.
-    # Because data from same paths is cached by the browser,
-    # we must force an update by adding the current timestamp to the source.
-    timer = ui.timer(interval=0.1, callback=lambda: update_image(camera))
-
-    ui.context.client.on_connect(timer.activate)
-    ui.context.client.on_disconnect(timer.deactivate)
+    base64_str = base64.b64encode(image_bytes).decode("utf-8")
+    video_image.set_source(f"data:image/png;base64,{base64_str}")
 
 
 def setup() -> None:
@@ -62,19 +52,33 @@ def setup() -> None:
 
     cameras = tuple(RTSPCameraStream(url) for url in rtsp_urls.split(","))
     for camera in cameras:
-        ui.timer(0.1, camera.start, once=True)
-        # camera.start()
+        camera.start()
 
     @ui.page("/")
     async def index():
         with ui.column().classes("max-w-6xl mx-auto"):
+            ui.label("Night Watcher")
             with ui.column().classes("grid grid-cols-1 lg:grid-cols-2 gap-4"):
-                for camera in cameras:
-                    create_camera_view(camera)
+                images = {
+                    camera: ui.interactive_image().classes("w-full h-full")
+                    for camera in cameras
+                }
+                for camera, video_image in images.items():
+                    update_image(camera, video_image)
+
+                    # A timer constantly updates the source of the image.
+                    # Because data from same paths is cached by the browser,
+                    # we must force an update by adding the current timestamp to the source.
+                    ui.timer(
+                        interval=1,
+                        callback=partial(update_image, camera, video_image),
+                        immediate=False,
+                    )
 
     async def disconnect() -> None:
         """Disconnect all clients from current running server."""
         for client_id in Client.instances:
+            logging.info(f"Disconnect client {client_id}")
             await core.sio.disconnect(client_id)
 
     async def cleanup() -> None:
