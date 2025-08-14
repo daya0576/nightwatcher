@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 from nightwatcher.pipeline import Pipeline, Request, Response, task
-from nightwatcher.rtsp import RTSPCameraStream
+from nightwatcher.streams import RTSPCameraStream
 
 
 class MockRTSPCameraStream(RTSPCameraStream):

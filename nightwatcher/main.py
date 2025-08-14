@@ -1,15 +1,12 @@
-import base64
 import logging
 import os
 import signal
-from functools import partial
 
 from dotenv import load_dotenv
 from nicegui import Client, app, core, ui
 
-from nightwatcher import utils
-from nightwatcher.pipeline import Pipeline, Request, Response
-from nightwatcher.rtsp import CameraGroup, RTSPCameraStream
+from nightwatcher import views
+from nightwatcher.streams import CameraGroup, RTSPCameraStream
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,21 +21,6 @@ logging.basicConfig(
 load_dotenv()
 
 
-def update_image(camera: RTSPCameraStream, video_image: ui.interactive_image):
-    request, response = Request(camera), Response()
-    Pipeline("camera").invoke(request, response)
-
-    image = response.snapshot_annotated
-    if image is None:
-        image = response.snapshot
-
-    assert image is not None, "Failed to fetch any snapshot from stream"
-    image_bytes = utils.convert(image)
-
-    base64_str = base64.b64encode(image_bytes).decode("utf-8")
-    video_image.set_source(f"data:image/png;base64,{base64_str}")
-
-
 def setup() -> None:
     rtsp_urls = os.getenv("RTSP_URLS", "")
     assert rtsp_urls, f"Invalid rtsp urls: {rtsp_urls}"
@@ -48,24 +30,7 @@ def setup() -> None:
 
     @ui.page("/")
     async def index():
-        with ui.column().classes("max-w-6xl mx-auto"):
-            ui.label("Night Watcher").classes("test-xl")
-            with ui.column().classes("grid grid-cols-1 lg:grid-cols-2 gap-4"):
-                for camera in camera_group:
-                    video_image = ui.interactive_image().classes("w-full h-full")
-
-                    # Load images immediately when page load.
-                    update_image(camera, video_image)
-
-                    # A timer constantly updates the source of the image.
-                    # Because data from same paths is cached by the browser,
-                    # we must force an update by adding the current timestamp to the source.
-                    timer = ui.timer(
-                        interval=1,
-                        callback=partial(update_image, camera, video_image),
-                        immediate=False,
-                    )
-                    ui.context.client.on_disconnect(timer.deactivate)
+        views.create_camera_grid(camera_group)
 
     async def disconnect() -> None:
         """Disconnect all clients from current running server."""
@@ -101,4 +66,6 @@ app.on_startup(setup)
 ui.run(
     title="Night Watcher",
     favicon="🦇",
+    dark=True,
+    port=12505,
 )

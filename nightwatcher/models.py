@@ -1,3 +1,4 @@
 from ultralytics import YOLO
 
-yolo = YOLO("yolo11l.pt")
+# https://docs.ultralytics.com/tasks/detect/#models
+yolo = YOLO("yolo11m.pt")

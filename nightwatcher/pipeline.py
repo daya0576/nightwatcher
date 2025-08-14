@@ -8,7 +8,7 @@ from typing import Callable
 
 import numpy as np
 
-from nightwatcher.rtsp import RTSPCameraStream
+from nightwatcher.streams import RTSPCameraStream
 
 TASKS: dict[str, list[Callable]] = defaultdict(list)
 
@@ -30,6 +30,7 @@ def task(stage: str):
 @dataclass
 class Request:
     stream: RTSPCameraStream
+    enable_detection: bool = True
 
 
 @dataclass
@@ -56,12 +57,13 @@ class Pipeline:
         self.tasks = TASKS.copy()
 
     def invoke(self, request: Request, response: Response) -> bool:
+        logging.info("[Pipeline]Starting...")
         for lifecycle in LifeCycle:
             for task in self.tasks[lifecycle.value]:
                 task_start = time.time()
                 task(request, response)
                 task_duration = (time.time() - task_start) * 1000
-                logging.debug(
+                logging.info(
                     f"[Pipeline][{lifecycle.value}] Task {task.__name__} "
                     f"completed in {task_duration:.0f}ms"
                 )

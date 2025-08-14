@@ -1,5 +1,6 @@
 import logging
 
+import numpy as np
 import supervision as sv
 
 from nightwatcher import models
@@ -11,21 +12,19 @@ def read_frame(request: Request, response: Response):
     ret, frame = request.stream.read()
     logging.debug(f"[Consumer]Read latest frame: {ret},{str(frame)[:10]}")
 
-    assert ret is True
-    assert frame is not None
-
     response.snapshot = frame
 
 
 @task("before_stop")
 def detection(_: Request, response: Response):
     image = response.snapshot
-    assert image is not None
+    if image is None:
+        return
 
     # Run Detection
     # https://docs.ultralytics.com/tasks/detect/
     model = models.yolo
-    results = model(image, verbose=False)[0]
+    results = model(image, conf=0.15, classes=[0], verbose=False)[0]
 
     # Load Predictions into Supervision
     # https://supervision.roboflow.com/latest/how_to/detect_and_annotate/
@@ -35,6 +34,7 @@ def detection(_: Request, response: Response):
     box_annotator = sv.BoxAnnotator()
     annotated_image = box_annotator.annotate(scene=image, detections=detections)
 
+    # Custom labels
     label_annotator = sv.LabelAnnotator(
         text_scale=1.5,
         text_thickness=3,
@@ -56,4 +56,8 @@ def detection(_: Request, response: Response):
 
 @task("after_stop")
 def validate(_: Request, response: Response):
-    assert response.snapshot is not None
+    if response.snapshot is None:
+        response.snapshot = np.zeros((480, 640, 3), dtype=np.uint8)
+
+    if response.snapshot_annotated is None:
+        response.snapshot_annotated = response.snapshot
