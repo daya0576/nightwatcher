@@ -64,7 +64,7 @@ class Pipeline:
                 task(request, response)
                 task_duration = (time.time() - task_start) * 1000
                 logging.info(
-                    f"[Pipeline][{lifecycle.value}] Task {task.__name__} "
+                    f"[Pipeline][{lifecycle.value}]Task {task.__name__} "
                     f"completed in {task_duration:.0f}ms"
                 )
 

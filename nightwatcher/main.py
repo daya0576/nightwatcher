@@ -30,6 +30,16 @@ def setup() -> None:
 
     @ui.page("/")
     async def index():
+        # common headers
+        ui.add_head_html(
+            """
+            <link rel="manifest" href="/statics/pwa/manifest.json">
+            <link rel="apple-touch-icon" href="/statics/images/bat_300x300.png">
+            <meta name="theme-color" content="#F9F9F9" media="(prefers-color-scheme: light)" />
+            <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)" />
+            """
+        )
+
         views.create_camera_grid(camera_group)
 
     async def disconnect() -> None:
@@ -62,10 +72,13 @@ def setup() -> None:
 # All the setup is only done when the server starts. This avoids the webcam being accessed
 # by the auto-reload main process (see https://github.com/zauberzeug/nicegui/discussions/2321).
 app.on_startup(setup)
+oneyear = 365 * 24 * 60 * 60
+app.add_static_files("/statics", "statics", max_cache_age=oneyear)
 
-ui.run(
-    title="Night Watcher",
-    favicon="🦇",
-    dark=True,
-    port=12505,
-)
+if __name__ in {"__main__", "__mp_main__"}:
+    ui.run(
+        title="Night Watcher",
+        favicon="🦇",
+        dark=True,
+        port=12505,
+    )

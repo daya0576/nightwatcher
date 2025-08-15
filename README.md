@@ -1,6 +1,6 @@
-# [WIP] Night Watcher
+# [WIP] Night Watcher 🦇
 
-A Micro IP Camera Viewer with smart detections 🦇
+A Simple IP Camera Viewer with Custom Detection 
 
 <img src="https://github.com/user-attachments/assets/85c443a4-455e-499e-b259-9106de12f574" width='850'/>
 
@@ -8,7 +8,7 @@ A Micro IP Camera Viewer with smart detections 🦇
 
 1. **Performance**: Blazing fast streaming without any delay
 2. **Cross Platform Support**: Works on any device with a browser
-3. **Privacy & Extensibility**: Local models and custom user script support
+3. **Privacy & Extensibility**: Local models and custom detection script support
 4. **Simplicity**: Minimal navigations and css styles
 
 # Get Started
@@ -22,7 +22,7 @@ uv sync
 uv run python -m nightwatcher.main
 ```
 
-# Final Words
+# About 
 This project is made with love for families, tested and approved by my wife.
 
 Hoping you can enjoy this project and feel free to contribute! 
