@@ -1,0 +1,14 @@
+{
+  "id": "nightwatcher",
+  "name": "Night Watcher",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/statics/images/bat_300x300.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

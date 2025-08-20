@@ -1,43 +1,45 @@
-import base64
 from functools import partial
 
-from nicegui import ui
+from nicegui import app, ui
 
-from nightwatcher import utils
 from nightwatcher.pipeline import Pipeline, Request, Response
 from nightwatcher.streams import CameraGroup, RTSPCameraStream
 
+DETECTION_KEY = "enable_detection"
+
 
 def update_image(camera: RTSPCameraStream, video_image: ui.interactive_image):
-    request, response = Request(camera), Response()
+    enable_detection = app.storage.client.get(DETECTION_KEY) is True
+    request, response = Request(camera, enable_detection), Response()
     Pipeline("camera").invoke(request, response)
+    video_image.set_source(response.image_base64)
 
-    image = response.snapshot_annotated
-    assert image is not None, "Failed to fetch any snapshot from stream"
 
-    image_bytes = utils.convert(image)
+def camera_image(camera: RTSPCameraStream):
+    interactive_image = ui.interactive_image().classes("w-full h-full")
 
-    base64_str = base64.b64encode(image_bytes).decode("utf-8")
-    video_image.set_source(f"data:image/png;base64,{base64_str}")
+    # Load images immediately when page load.
+    update_image(camera, interactive_image)
+
+    # A timer constantly updates the source of the image.
+    timer = ui.timer(
+        interval=0.5,
+        callback=partial(update_image, camera, interactive_image),
+        immediate=False,
+    )
+    ui.context.client.on_disconnect(timer.deactivate)
 
 
 @ui.refreshable
 def create_camera_grid(cameras: CameraGroup):
     with ui.column().classes("max-w-6xl mx-auto"):
-        ui.label("Night Watcher").classes("test-xl")
+        ui.label("Night Watcher")
         with ui.column().classes("grid grid-cols-1 lg:grid-cols-2 gap-4"):
             for camera in cameras:
-                video_image = ui.interactive_image().classes("w-full h-full")
+                camera_image(camera)
 
-                # Load images immediately when page load.
-                update_image(camera, video_image)
-
-                # A timer constantly updates the source of the image.
-                # Because data from same paths is cached by the browser,
-                # we must force an update by adding the current timestamp to the source.
-                timer = ui.timer(
-                    interval=1,
-                    callback=partial(update_image, camera, video_image),
-                    immediate=False,
-                )
-                ui.context.client.on_disconnect(timer.deactivate)
+        with ui.column().classes("gap-1"):
+            ui.label("Options")
+            ui.checkbox("Enable Detection").bind_value(
+                app.storage.client, DETECTION_KEY
+            )

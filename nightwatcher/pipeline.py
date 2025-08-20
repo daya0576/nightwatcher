@@ -35,12 +35,16 @@ class Request:
 
 @dataclass
 class Response:
-    # detection stats
+    # camera frames
+    frame: np.ndarray | None = None
+
+    # detections (custom scripts)
+    annotation: np.ndarray | None = None
     color: str | None = None
 
-    # screen shots
-    snapshot: np.ndarray | None = None
-    snapshot_annotated: np.ndarray | None = None
+    # output
+    image_bytes: bytes = b""
+    image_base64: str = ""
 
 
 class LifeCycle(Enum):
@@ -57,15 +61,19 @@ class Pipeline:
         self.tasks = TASKS.copy()
 
     def invoke(self, request: Request, response: Response) -> bool:
-        logging.info("[Pipeline]Starting...")
-        for lifecycle in LifeCycle:
-            for task in self.tasks[lifecycle.value]:
-                task_start = time.time()
-                task(request, response)
-                task_duration = (time.time() - task_start) * 1000
-                logging.info(
-                    f"[Pipeline][{lifecycle.value}]Task {task.__name__} "
-                    f"completed in {task_duration:.0f}ms"
-                )
+        logging.debug("[Pipeline]Starting...")
+        try:
+            for lifecycle in LifeCycle:
+                for task in self.tasks[lifecycle.value]:
+                    task_start = time.time()
+                    task(request, response)
+                    task_duration = (time.time() - task_start) * 1000
+                    logging.debug(
+                        f"[Pipeline][{lifecycle.value}]Task {task.__name__} "
+                        f"completed in {task_duration:.0f}ms"
+                    )
+        except Exception:
+            logging.exception("Pipeline failed")
+            return False
 
         return True

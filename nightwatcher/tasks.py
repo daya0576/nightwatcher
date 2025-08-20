@@ -1,30 +1,31 @@
+import base64
 import logging
 
 import numpy as np
 import supervision as sv
 
-from nightwatcher import models
+from nightwatcher import models, utils
 from nightwatcher.pipeline import Request, Response, task
 
 
-@task("after_start")
+@task("before_start")
 def read_frame(request: Request, response: Response):
     ret, frame = request.stream.read()
     logging.debug(f"[Consumer]Read latest frame: {ret},{str(frame)[:10]}")
 
-    response.snapshot = frame
+    response.frame = frame
 
 
-@task("before_stop")
-def detection(_: Request, response: Response):
-    image = response.snapshot
-    if image is None:
+@task("after_start")
+def detection(req: Request, response: Response):
+    frame = response.frame
+    if frame is None or not req.enable_detection:
         return
 
     # Run Detection
     # https://docs.ultralytics.com/tasks/detect/
     model = models.yolo
-    results = model(image, conf=0.15, classes=[0], verbose=False)[0]
+    results = model(frame, conf=0.15, classes=[0], verbose=False)[0]
 
     # Load Predictions into Supervision
     # https://supervision.roboflow.com/latest/how_to/detect_and_annotate/
@@ -32,7 +33,7 @@ def detection(_: Request, response: Response):
 
     # Annotate Image with Detections
     box_annotator = sv.BoxAnnotator()
-    annotated_image = box_annotator.annotate(scene=image, detections=detections)
+    annotated_image = box_annotator.annotate(scene=frame, detections=detections)
 
     # Custom labels
     label_annotator = sv.LabelAnnotator(
@@ -51,13 +52,21 @@ def detection(_: Request, response: Response):
         scene=annotated_image, detections=detections, labels=labels
     )
 
-    response.snapshot_annotated = annotated_image
+    response.annotation = annotated_image
+
+
+@task("before_stop")
+def validate(_: Request, response: Response):
+    if response.annotation is None:
+        response.annotation = response.frame
 
 
 @task("after_stop")
-def validate(_: Request, response: Response):
-    if response.snapshot is None:
-        response.snapshot = np.zeros((480, 640, 3), dtype=np.uint8)
+def convert(_: Request, response: Response):
+    if response.annotation is None:
+        response.annotation = np.zeros((1440, 2560, 1), dtype=np.uint8)
 
-    if response.snapshot_annotated is None:
-        response.snapshot_annotated = response.snapshot
+    response.image_bytes = utils.convert(response.annotation)
+
+    base64_str = base64.b64encode(response.image_bytes).decode("utf-8")
+    response.image_base64 = f"data:image/png;base64,{base64_str}"

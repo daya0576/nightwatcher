@@ -108,9 +108,8 @@ class CameraGroup:
         self._current = 0
 
     def start(self) -> Self:
-        futures = [self._executor.submit(camera.start) for camera in self.cameras]
-        for future in futures:
-            future.result()
+        for camera in self.cameras:
+            self._executor.submit(camera.start)
 
         return self
 
