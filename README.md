@@ -1,8 +1,12 @@
-# [WIP] Night Watcher 🦇
+# Night Watcher 🦇
 
-A Simple IP Camera Viewer with Custom Detection 
+A Simple IP Camera Viewer with Custom Detection
 
-<img src="https://github.com/user-attachments/assets/85c443a4-455e-499e-b259-9106de12f574" width='850'/>
+<img width="750" alt="image" src="https://github.com/user-attachments/assets/ae929319-e10a-4e53-b919-e67355f346c4" />
+
+
+Inspired by: 
+- NiceGUI Opencv Webcam Example from [@zauberzeug](https://github.com/zauberzeug)
 
 # Features
 
@@ -11,12 +15,16 @@ A Simple IP Camera Viewer with Custom Detection
 3. **Privacy & Extensibility**: Local models and custom detection script support
 4. **Simplicity**: Minimal navigations and css styles
 
+
 # Get Started
 
 ```shell
 # Install uv and all the dependencies
 uv venv && source .venv/bin/activate
 uv sync
+
+# Setup URL of video stream
+export RTSP_URLS=protocol://host:port/script_name?script_params|auth
 
 # Start the server
 uv run python -m nightwatcher.main
@@ -28,3 +36,4 @@ This project is made with love for families, tested by my wife :p
 Hoping you can enjoy this project and feel free to contribute!
 
 [[Read more...]](https://changchen.me/blog/20250811/nightwatcher/)
+
