@@ -24,8 +24,9 @@ def detection(req: Request, response: Response):
 
     # Run Detection
     # https://docs.ultralytics.com/tasks/detect/
+    # use `classes=[0]` to detect person only
     model = models.yolo
-    results = model(frame, conf=0.15, classes=[0], verbose=False)[0]
+    results = model(frame, conf=0.15, verbose=False)[0]
 
     # Load Predictions into Supervision
     # https://supervision.roboflow.com/latest/how_to/detect_and_annotate/

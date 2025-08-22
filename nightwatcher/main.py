@@ -79,6 +79,6 @@ if __name__ in {"__main__", "__mp_main__"}:
     ui.run(
         title="Night Watcher",
         favicon="🦇",
-        dark=True,
+        dark=None,
         port=12505,
     )

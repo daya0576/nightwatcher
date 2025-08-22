@@ -13,7 +13,7 @@ A Simple IP Camera Viewer with Custom Detection
 
 # Get Started
 
-```
+```shell
 # Install uv and all the dependencies
 uv venv && source .venv/bin/activate
 uv sync
@@ -23,6 +23,8 @@ uv run python -m nightwatcher.main
 ```
 
 # About 
-This project is made with love for families, tested and approved by my wife.
+This project is made with love for families, tested by my wife :p 
 
-Hoping you can enjoy this project and feel free to contribute! 
+Hoping you can enjoy this project and feel free to contribute!
+
+[[Read more...]](https://changchen.me/blog/20250811/nightwatcher/)

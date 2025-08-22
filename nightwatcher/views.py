@@ -29,6 +29,15 @@ def camera_image(camera: RTSPCameraStream):
     )
     ui.context.client.on_disconnect(timer.deactivate)
 
+    # Options
+    with ui.dialog() as dialog, ui.card():
+        ui.label("Options")
+        with ui.column().classes("gap-1"):
+            ui.checkbox("Enable Detection").bind_value(
+                app.storage.client, DETECTION_KEY
+            )
+    interactive_image.on("click", dialog.open)
+
 
 @ui.refreshable
 def create_camera_grid(cameras: CameraGroup):
@@ -37,9 +46,3 @@ def create_camera_grid(cameras: CameraGroup):
         with ui.column().classes("grid grid-cols-1 lg:grid-cols-2 gap-4"):
             for camera in cameras:
                 camera_image(camera)
-
-        with ui.column().classes("gap-1"):
-            ui.label("Options")
-            ui.checkbox("Enable Detection").bind_value(
-                app.storage.client, DETECTION_KEY
-            )
