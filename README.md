@@ -1,4 +1,4 @@
-# [WIP] Night Watcher 🦇
+# Night Watcher 🦇
 
 A Simple IP Camera Viewer with Custom Detection
 
