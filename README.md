@@ -2,7 +2,8 @@
 
 A Simple IP Camera Viewer with Custom Detection
 
-<img width="650" alt="image" src="https://github.com/user-attachments/assets/b54cb870-c0bf-4783-afd6-4e6d45858277" />
+<img width="500" alt="image" src="https://github.com/user-attachments/assets/9fa42ad1-24fc-42f0-849c-f3fe58a64713" />
+
 
 Inspired by: 
 - NiceGUI Opencv Webcam Example from [@zauberzeug](https://github.com/zauberzeug)
