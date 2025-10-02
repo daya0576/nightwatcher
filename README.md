@@ -40,4 +40,4 @@ Hoping you can enjoy this project and feel free to contribute!
 
 
 # WIP
-- [ ] Detection timelines will be added with snapshots
+- [ ] Detection timelines with snapshots
