@@ -30,6 +30,7 @@ export RTSP_URLS=protocol://host:port/script_name?script_params|auth
 uv run python -m nightwatcher.main
 ```
 
+
 # About 
 This project is made with love for families, tested by my wife :p 
 
@@ -37,3 +38,6 @@ Hoping you can enjoy this project and feel free to contribute!
 
 [[Read more...]](https://changchen.me/blog/20250811/nightwatcher/)
 
+
+# WIP
+- [ ] Detection timelines will be added with snapshots
