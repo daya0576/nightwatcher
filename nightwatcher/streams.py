@@ -1,4 +1,5 @@
 import logging
+import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -31,7 +32,22 @@ class RTSPCameraStream:
             if self.cap is not None:
                 self.cap.release()
 
-            self.cap = cv2.VideoCapture(self.url)
+            # Pass FFmpeg-level RTSP options via env var (microseconds).
+            # rtsp_transport;tcp — use TCP to avoid UDP packet loss
+            # stimeout           — FFmpeg socket stall timeout (5s)
+            os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
+                "rtsp_transport;tcp|stimeout;5000000"
+            )
+
+            # Construct an empty capture first so we can set OpenCV's own
+            # interrupt-callback timeouts BEFORE opening the stream.
+            # These control the 30-second hang seen in cap_ffmpeg_impl.hpp;
+            # they are independent of the FFmpeg-level options above.
+            self.cap = cv2.VideoCapture()
+            self.cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5_000)  # connect timeout 5s
+            self.cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 5_000)  # read/stall timeout 5s
+            self.cap.open(self.url, cv2.CAP_FFMPEG)
+
             if not self.cap.isOpened():
                 self.logger.error("Failed to open RTSP stream")
                 return False
@@ -77,9 +93,10 @@ class RTSPCameraStream:
     def _update_frame(self) -> None:
         while self.is_running:
             if self.cap is None or not self.cap.isOpened():
-                self.logger.info("Attemp to reconnect...")
+                self.logger.info("Attempt to reconnect...")
                 if not self._connect():
                     time.sleep(1)
+                    continue
                 continue
 
             ret, frame = self.cap.read()
