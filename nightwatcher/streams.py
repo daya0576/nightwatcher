@@ -99,9 +99,9 @@ class RTSPCameraStream:
 
             ret, frame = self.cap.read()
             if not ret:
-                # Retry interval and max times
                 self.logger.warning("Failed to read frame, reconnect...")
-                self._connect()
+                if not self._connect():
+                    time.sleep(1)
                 continue
 
             with self.lock:
