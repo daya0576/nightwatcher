@@ -164,3 +164,6 @@ profile.svg
 
 *.log
 *.pt
+
+# nightwatcher runtime
+.nightwatcher.pid
